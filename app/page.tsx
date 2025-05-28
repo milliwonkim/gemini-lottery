@@ -102,8 +102,9 @@ export default function Home() {
             로또 6/45
           </button>
           <button
+            disabled
             onClick={() => setLotteryType("pension")}
-            className={`flex-1 py-3 text-center font-semibold 
+            className={`flex-1 py-3 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent text-center font-semibold 
                         ${
                           lotteryType === "pension"
                             ? "border-b-2 border-blue-600 text-blue-600"
