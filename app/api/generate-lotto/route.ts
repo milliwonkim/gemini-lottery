@@ -62,10 +62,10 @@ export async function POST(request: Request) {
     // console.log("Constructed Prompt:", prompt); // 디버깅용
 
     const generationConfig: GenerationConfig = {
-      temperature: 0.9,
-      topK: 1,
-      topP: 1,
-      maxOutputTokens: 2048,
+      temperature: 1.2,
+      topK: 40,
+      topP: 0.95,
+      maxOutputTokens: 3048,
     };
 
     const safetySettings: SafetySetting[] = [
@@ -97,28 +97,68 @@ export async function POST(request: Request) {
     const response = result.response;
     let text = response.text();
 
-    // console.log("Gemini Raw Response Text:", text); // 디버깅용
+    // console.log("Gemini Raw Response Text:", text);
 
-    // 마크다운 코드 블록 제거 로직 수정
-    // 1. 앞부분의 ```json 또는 ``` 제거
+    // 마크다운 코드 블록 제거 로직
     if (text.startsWith("```json")) {
-      text = text.substring(text.indexOf("\n") + 1); // ```json 다음 줄부터 시작
+      text = text.substring(text.indexOf("\n") + 1);
     } else if (text.startsWith("```")) {
-      text = text.substring(3); // ``` 다음부터 시작
+      text = text.substring(3);
     }
 
-    // 2. 뒷부분의 ``` 제거 (앞뒤 공백도 함께 제거)
-    text = text.trim(); // 먼저 앞뒤 공백 제거
+    text = text.trim();
     if (text.endsWith("```")) {
-      text = text.substring(0, text.length - 3); // 마지막 ``` 제거
+      text = text.substring(0, text.length - 3);
     }
-    text = text.trim(); // 다시 한번 앞뒤 공백 제거
+    text = text.trim();
 
-    // console.log("Cleaned Text for JSON Parsing:", text); // 디버깅용
+    // JSON 부분만 추출하는 강화된 로직
+    // { 로 시작하고 } 로 끝나는 첫 번째 완전한 JSON 객체를 찾기
+    const jsonStart = text.indexOf("{");
+    if (jsonStart !== -1) {
+      let braceCount = 0;
+      let jsonEnd = -1;
 
-    let generatedNumbers;
+      for (let i = jsonStart; i < text.length; i++) {
+        if (text[i] === "{") {
+          braceCount++;
+        } else if (text[i] === "}") {
+          braceCount--;
+          if (braceCount === 0) {
+            jsonEnd = i;
+            break;
+          }
+        }
+      }
+
+      if (jsonEnd !== -1) {
+        text = text.substring(jsonStart, jsonEnd + 1);
+      }
+    }
+
+    // console.log("Cleaned Text for JSON Parsing:", text);
+
+    let parsedResponse;
     try {
-      generatedNumbers = JSON.parse(text);
+      parsedResponse = JSON.parse(text);
+
+      // 새로운 응답 형식 처리: { "numbers": [...], "analysis": "..." }
+      let generatedNumbers;
+      let analysis = "";
+
+      if (parsedResponse.numbers && Array.isArray(parsedResponse.numbers)) {
+        // 새로운 형식
+        generatedNumbers = parsedResponse.numbers;
+        analysis = parsedResponse.analysis || "";
+      } else if (Array.isArray(parsedResponse)) {
+        // 기존 형식 (배열만 반환)
+        generatedNumbers = parsedResponse;
+        analysis = "기본 무작위 생성";
+      } else {
+        throw new Error("예상되지 않은 응답 형식입니다.");
+      }
+
+      // 번호 유효성 검증
       if (
         !Array.isArray(generatedNumbers) ||
         !generatedNumbers.every(
@@ -137,7 +177,12 @@ export async function POST(request: Request) {
           "API 응답이 예상된 숫자/문자열 배열의 배열 형식이 아닙니다."
         );
       }
-    } catch (parseError: unknown) {
+
+      return NextResponse.json({
+        generatedNumbers,
+        analysis, // 분석 정보도 함께 반환
+      });
+    } catch (parseError) {
       const error = parseError as Error;
       console.error("Error parsing Gemini response:", error);
       console.error(
@@ -154,8 +199,6 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
-
-    return NextResponse.json({ generatedNumbers });
   } catch (error: unknown) {
     const err = error as Error;
     console.error("Error in generate-lotto API:", err);
