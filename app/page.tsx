@@ -30,7 +30,7 @@ export default function Home() {
         id: "noConsecutive4",
         name: "4개 이상 연속번호 제외",
         description:
-          "역대 당첨번호와 연속적으로 4개 이상 일치하는 경우를 제외합니다.",
+          "하나의 조합 안에서 번호가 4개 이상 연속되는 경우를 제외합니다.",
       },
     ],
     []
@@ -95,10 +95,10 @@ export default function Home() {
             <span className="text-2xl font-bold text-white">🎱</span>
           </div>
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            AI 로또 번호 생성기
+            통계 기반 로또 번호 생성기
           </h1>
           <p className="text-gray-600 text-lg">
-            Gemini AI가 통계 분석으로 생성하는 로또 6/45 번호
+            한국 로또 6/45의 핫/콜드 통계와 구간 분포로 추천하는 번호
           </p>
         </div>
 
@@ -233,12 +233,12 @@ export default function Home() {
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 ></path>
               </svg>
-              <span>AI가 분석 중...</span>
+              <span>통계 분석 중...</span>
             </>
           ) : (
             <>
               <span className="mr-2">🎲</span>
-              번호 생성하기
+              통계로 번호 예측하기
             </>
           )}
         </button>
@@ -277,11 +277,11 @@ export default function Home() {
               🎯 생성된 로또 번호
             </h2>
             <p className="text-gray-600">
-              AI가 통계 분석으로 선별한 번호입니다
+              가장 많이 활용되는 핫/콜드 통계 예측 방식으로 정리했어요
             </p>
           </div>
 
-          {/* AI 분석 정보 - Accordion */}
+          {/* 통계 분석 정보 - Accordion */}
           {analysis && (
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl shadow-sm overflow-hidden">
               <button
@@ -294,7 +294,7 @@ export default function Home() {
                       <span className="text-white text-sm font-bold">📊</span>
                     </div>
                     <h3 className="text-lg font-semibold text-blue-900">
-                      AI 분석 결과
+                      통계 분석 결과
                     </h3>
                   </div>
                   <svg
@@ -317,7 +317,9 @@ export default function Home() {
               {isAnalysisOpen && (
                 <div className="px-6 pb-6">
                   <div className="border-t border-blue-200 pt-4">
-                    <p className="text-blue-800 leading-relaxed">{analysis}</p>
+                    <p className="text-blue-800 leading-relaxed whitespace-pre-line">
+                      {analysis}
+                    </p>
                   </div>
                 </div>
               )}
@@ -399,10 +401,11 @@ export default function Home() {
       <footer className="mt-16 text-center text-sm text-gray-500 w-full max-w-lg space-y-2">
         <div className="border-t border-gray-200 pt-8">
           <p className="font-semibold">
-            &copy; {new Date().getFullYear()} AI 로또 번호 생성기
+            &copy; {new Date().getFullYear()} 통계 기반 로또 번호 생성기
           </p>
           <p className="text-xs leading-relaxed">
-            본 서비스는 AI 통계 분석을 기반으로 하며, 실제 당첨을 보장하지
+            본 서비스는 공개된 통계 패턴 분석을 기반으로 하며, 실제 당첨을
+            보장하지
             않습니다.
             <br />
             재미와 참고 목적으로만 사용해주세요. 🍀
