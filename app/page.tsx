@@ -11,7 +11,7 @@ interface Condition {
 export default function Home() {
   const [quantity, setQuantity] = useState<number>(5);
   const [selectedCondition, setSelectedCondition] =
-    useState<string>("noConsecutive4");
+    useState<string>("none");
   const [generatedNumbers, setGeneratedNumbers] = useState<string[][]>([]);
   const [analysis, setAnalysis] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -24,7 +24,7 @@ export default function Home() {
       {
         id: "none",
         name: "선택 안함",
-        description: "특별한 조건 없이 번호를 생성합니다.",
+        description: "모든 번호 조합을 같은 기준으로 생성합니다.",
       },
       {
         id: "noConsecutive4",
@@ -95,10 +95,10 @@ export default function Home() {
             <span className="text-2xl font-bold text-white">🎱</span>
           </div>
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            통계 기반 로또 번호 생성기
+            균등 무작위 로또 번호 생성기
           </h1>
           <p className="text-gray-600 text-lg">
-            한국 로또 6/45의 핫/콜드 통계와 구간 분포로 추천하는 번호
+            과거 통계 가중치 없이 역대 1등 조합을 제외하고 뽑는 번호
           </p>
         </div>
 
@@ -233,12 +233,12 @@ export default function Home() {
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                 ></path>
               </svg>
-              <span>통계 분석 중...</span>
+              <span>번호 생성 중...</span>
             </>
           ) : (
             <>
               <span className="mr-2">🎲</span>
-              통계로 번호 예측하기
+              균등 무작위로 번호 뽑기
             </>
           )}
         </button>
@@ -277,11 +277,11 @@ export default function Home() {
               🎯 생성된 로또 번호
             </h2>
             <p className="text-gray-600">
-              가장 많이 활용되는 핫/콜드 통계 예측 방식으로 정리했어요
+              과거 출현 기록을 가중치로 쓰지 않고, 역대 1등 조합은 제외했어요
             </p>
           </div>
 
-          {/* 통계 분석 정보 - Accordion */}
+          {/* 생성 기준 정보 - Accordion */}
           {analysis && (
             <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl shadow-sm overflow-hidden">
               <button
@@ -291,10 +291,10 @@ export default function Home() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-sm font-bold">📊</span>
+                      <span className="text-white text-sm font-bold">ⓘ</span>
                     </div>
                     <h3 className="text-lg font-semibold text-blue-900">
-                      통계 분석 결과
+                      생성 기준
                     </h3>
                   </div>
                   <svg
@@ -401,12 +401,11 @@ export default function Home() {
       <footer className="mt-16 text-center text-sm text-gray-500 w-full max-w-lg space-y-2">
         <div className="border-t border-gray-200 pt-8">
           <p className="font-semibold">
-            &copy; {new Date().getFullYear()} 통계 기반 로또 번호 생성기
+            &copy; {new Date().getFullYear()} 균등 무작위 로또 번호 생성기
           </p>
           <p className="text-xs leading-relaxed">
-            본 서비스는 공개된 통계 패턴 분석을 기반으로 하며, 실제 당첨을
-            보장하지
-            않습니다.
+            본 서비스는 과거 당첨 통계를 예측 신호로 사용하지 않으며, 역대
+            1등 조합과 같은 조합만 제외합니다. 실제 당첨을 보장하지 않습니다.
             <br />
             재미와 참고 목적으로만 사용해주세요. 🍀
           </p>

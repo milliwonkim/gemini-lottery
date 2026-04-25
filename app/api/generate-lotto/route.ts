@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     const condition: "none" | "noConsecutive4" =
       selectedCondition === "noConsecutive4" ? "noConsecutive4" : "none";
 
-    const { generatedNumbers, analysis } = generateLotto645(
+    const { generatedNumbers, analysis } = await generateLotto645(
       quantity,
       condition
     );
