@@ -19,6 +19,15 @@ interface CombinationMeta {
   isPreviousWinner: boolean;
 }
 
+interface GemmaGenerateContentResponse {
+  candidates?: {
+    content?: {
+      parts?: { text?: string; thought?: boolean }[];
+    };
+  }[];
+}
+
+const GEMMA_MODEL_NAME = "gemma-4-31b-it";
 const FIRST_DRAW_DATE = new Date("2002-12-07T00:00:00+09:00").getTime();
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 let previousWinningKeysPromise: Promise<Set<string>> | null = null;
@@ -161,6 +170,88 @@ function generateSingleCombination(
   return null;
 }
 
+function createLocalAnalysis(
+  metas: CombinationMeta[],
+  condition: GenerationCondition
+): string {
+  const conditionMessage =
+    condition === "noConsecutive4"
+      ? "4개 이상 연속번호 제외 조건만 적용했습니다."
+      : "추가 조건 없이 생성했습니다.";
+
+  const analysisMessage = metas
+    .map((meta, index) => {
+      const consecutiveText = meta.hasConsecutive4
+        ? "4개 이상 연속번호 있음"
+        : "4개 이상 연속번호 없음";
+      const previousWinnerText = meta.isPreviousWinner
+        ? "역대 1등 조합과 일치"
+        : "역대 1등 조합과 불일치";
+
+      return `#${index + 1} 조합 (${meta.numbers.join(", ")}): 홀짝 ${meta.oddCount}:${meta.evenCount}, 합계 ${meta.sum}, ${consecutiveText}, ${previousWinnerText}`;
+    })
+    .join("\n");
+
+  return `1부터 45까지 각 번호를 같은 확률로 두고, 과거 출현 통계나 미출현 기간은 가중치로 사용하지 않았습니다. 이전 1등 당첨 조합은 제외했습니다. ${conditionMessage}\n${analysisMessage}`;
+}
+
+async function createGemmaAnalysis(
+  metas: CombinationMeta[],
+  condition: GenerationCondition
+): Promise<string | null> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return null;
+  }
+
+  const localAnalysis = createLocalAnalysis(metas, condition);
+  const prompt = [
+    "너는 한국 로또 6/45 번호 생성 결과를 짧고 명확하게 설명하는 분석가다.",
+    "아래 생성 결과를 바탕으로 한국어로만 답하라.",
+    "당첨 가능성을 보장하거나 예측한다고 말하지 말고, 균등 무작위 생성과 제외 조건만 설명하라.",
+    "원문 번호와 조건을 바꾸지 말고, 4문장 이내로 요약한 뒤 각 조합별 핵심 지표를 줄바꿈으로 정리하라.",
+    "",
+    localAnalysis,
+  ].join("\n");
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMMA_MODEL_NAME}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: prompt }],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 1024,
+        },
+      }),
+    }
+  );
+
+  if (!response.ok) {
+    console.error("Gemma API error:", response.status, await response.text());
+    return null;
+  }
+
+  const data = (await response.json()) as GemmaGenerateContentResponse;
+  const text =
+    data.candidates?.[0]?.content?.parts
+      ?.filter((part) => !part.thought)
+      ?.map((part) => part.text)
+      .filter((part): part is string => Boolean(part))
+      .join("")
+      .trim() ?? "";
+
+  return text ? `Gemma 31B 분석\n${text}` : null;
+}
+
 export async function generateLotto645(
   quantity: number,
   condition: GenerationCondition
@@ -190,26 +281,11 @@ export async function generateLotto645(
     throw new Error("번호 생성에 실패했습니다. 다시 시도해주세요.");
   }
 
-  const conditionMessage =
-    condition === "noConsecutive4"
-      ? "4개 이상 연속번호 제외 조건만 적용했습니다."
-      : "추가 조건 없이 생성했습니다.";
-
-  const analysisMessage = metas
-    .map((meta, index) => {
-      const consecutiveText = meta.hasConsecutive4
-        ? "4개 이상 연속번호 있음"
-        : "4개 이상 연속번호 없음";
-      const previousWinnerText = meta.isPreviousWinner
-        ? "역대 1등 조합과 일치"
-        : "역대 1등 조합과 불일치";
-
-      return `#${index + 1} 조합 (${meta.numbers.join(", ")}): 홀짝 ${meta.oddCount}:${meta.evenCount}, 합계 ${meta.sum}, ${consecutiveText}, ${previousWinnerText}`;
-    })
-    .join("\n");
+  const localAnalysis = createLocalAnalysis(metas, condition);
+  const gemmaAnalysis = await createGemmaAnalysis(metas, condition);
 
   return {
     generatedNumbers: combinations,
-    analysis: `1부터 45까지 각 번호를 같은 확률로 두고, 과거 출현 통계나 미출현 기간은 가중치로 사용하지 않았습니다. 이전 1등 당첨 조합은 제외했습니다. ${conditionMessage}\n${analysisMessage}`,
+    analysis: gemmaAnalysis ?? localAnalysis,
   };
 }
